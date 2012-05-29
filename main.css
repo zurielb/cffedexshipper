@@ -1,0 +1,21 @@
+body {
+	margin: 0;
+	padding: 0;
+	color: grey;
+	font-size: 12px;
+	font-family: 'Helvetica';
+}
+header {
+	margin: 0;
+	width: 100%;
+	background-color: grey;
+	color: white;
+	padding: 10px;
+}
+header a, header a:visited {
+	color: white;
+	text-decoration: none;
+}
+nav, section#content {
+	margin: 10px;
+}
