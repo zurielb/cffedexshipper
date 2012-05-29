@@ -21,7 +21,7 @@
 			sandbox = true
 		) />
 
-		<cfset rates = fedexShipper.getRates(
+		<cfset result = fedexShipper.getRates(
 			shipperZip = "75201",
 			shipperState = "TX",
 			shipperCountry = "US",
@@ -30,24 +30,24 @@
 			shipToCountry = "US",
 			pkgWeight = "1",
 			pkgValue = "10",
-			shipToResidential = '1' EQ '1'
+			shipToResidential = true
 		) />
 
 		<section id="residentialFedexShipper">
 			<h2>Residential Fedex Rates</h2>
-			<cfif StructKeyExists(rates, "rates")>
+			<cfif result.success>
 				<ul>
-					<cfloop from="1" to="#arraylen(rates.rates)#" index="n">
+					<cfloop from="1" to="#arraylen(result.rates)#" index="n">
 						<cfoutput>
-							<li>#rates.rates[n].type# - #DollarFormat(rates.rates[n].totalNetCharge)#</li>
+							<li>#result.rates[n].type# - #DollarFormat(result.rates[n].totalNetCharge)#</li>
 						</cfoutput>
 					</cfloop>
 				</ul>
 			</cfif>
-			<cfdump var="#rates#" expand="false" label="Fedex Rates" />
+			<cfdump var="#result#" expand="false" label="Fedex Rates" />
 		</section>
 
-		<cfset rates = fedexShipper.getRates(
+		<cfset result = fedexShipper.getRates(
 			shipperAddress1 = "6060 N Central Expwy.",
 			shipperCity = "Dallas",
 			shipperState = "TX",
@@ -64,16 +64,16 @@
 
 		<section id="commercialFedexShipper">
 			<h2>Commercial Fedex Rates</h2>
-			<cfif StructKeyExists(rates, "rates")>
+			<cfif result.success>
 				<ul>
-					<cfloop from="1" to="#arraylen(rates.rates)#" index="n">
+					<cfloop from="1" to="#arraylen(result.rates)#" index="n">
 						<cfoutput>
-							<li>#rates.rates[n].type# - #DollarFormat(rates.rates[n].totalNetCharge)#</li>
+							<li>#result.rates[n].type# - #DollarFormat(result.rates[n].totalNetCharge)#</li>
 						</cfoutput>
 					</cfloop>
 				</ul>
 			</cfif>
-			<cfdump var="#rates#" expand="false" label="Fedex Rates" />
+			<cfdump var="#result#" expand="false" label="Fedex Rates" />
 		</section>
 	</section>
 </body>
