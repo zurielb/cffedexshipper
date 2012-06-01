@@ -17,9 +17,9 @@
 		<cfset variables.meterNo = arguments.meterNo />
 		
 		<cfif arguments.sandbox>
-			<cfset variables.fedexUrl = "https://gatewaybeta.fedex.com/web-services">
+			<cfset variables.fedexUrl = "https://wsbeta.fedex.com:443/web-services">
 		<cfelse>
-			<cfset variables.fedexUrl = "https://gateway.fedex.com/web-services">
+			<cfset variables.fedexUrl = "https://ws.fedex.com:443/web-services">
 		</cfif>
 	
 		<cfreturn this />
