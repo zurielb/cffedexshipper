@@ -21,7 +21,7 @@
 			sandbox = true
 		) />
 
-		<cfset fedexReply = fedexShipper.processShipmentRequest(
+		<cfset fedexReply = fedexShipper.createPickupRequest(
 			shipperName = "Customer Service",
 			shipperCompany = "Company Name",
 			shipperPhone = "2141112233",
@@ -32,35 +32,16 @@
 			shipperCountry = "US",
 			shipperIsResidential = false,
 			
-			shipToName = "First Last",
-			shipToCompany = "Company Name",
-			shipToPhone = "2145554433",
-			shipToEmail = "first@firstlast.com",
-			shipToAddress1 = "3217 Hidden Cove Drive",
-			shipToCity = "Plano",
-			shipToState = "TX",
-			shipToZip = "75075",
-			shipToCountry = "US",
-			shipToResidential = false,
-			
 			weight = "1",
-			length = "10",
-			width = "20",
-			height = "20",
-			packagingType = "YOUR_PACKAGING",
-			shippingMethod = "FEDEX_GROUND",
-			shipDate = Now(),
-			paymentType = "SENDER",
-			billingAct = "ACCOUNT_NUMBER",
+			packageCount = "1",
+			pickupDate = DateAdd('h', Now(), 12),
 			
-			imageType = "PNG",
-			labelDirectory = ExpandPath('Labels/'),
-			labelStockType = "PAPER_7X4.75"
+			returnRawResponse = true
 		) />
 
-		<section id="fedexShipmentRequest">
-			<h2>Fedex Shipment Request</h2>
-			<cfdump var="#fedexReply#" expand="true" label="Fedex Shipment Result" />
+		<section id="fedexPickupRequest">
+			<h2>Fedex Pickup Request</h2>
+			<cfdump var="#fedexReply#" expand="true" label="Fedex Pickup Request Result" />
 		</section>
 	</section>
 </body>

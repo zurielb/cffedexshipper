@@ -592,4 +592,173 @@
 
 		<cfreturn fedexReply />
 	</cffunction>
+	
+	<cffunction name="createPickupRequest" access="remote" returntype="struct" output="false">
+		<!--- From Address --->
+		<cfargument name="shipperName" type="string" required="no" default="" />
+		<cfargument name="shipperCompany" type="string" required="no" default="" />
+		<cfargument name="shipperPhone" type="string" required="no" default="" />
+		<cfargument name="shipperAddress1" type="string" required="no" default="" />
+		<cfargument name="shipperAddress2" type="string" required="no" default="" />
+		<cfargument name="shipperCity" type="string" required="no" default="" />
+		<cfargument name="shipperState" type="string" required="no" default="" />
+		<cfargument name="shipperZip" type="string" required="no" default="" />
+		<cfargument name="shipperUrbCode" type="string" default="" hint="Applies to Puerto Rico only" />
+		<cfargument name="shipperCountry" type="string" required="no" default="US" />
+		<cfargument name="shipperIsResidential" type="boolean" required="no" default="false" />
+		<!--- package Details --->
+		<cfargument name="weight" type="string" required="yes" />
+		<cfargument name="packageCount" type="string" required="no" default="1" />
+		<!--- pickup details ---->
+		<cfargument name="orderid" type="string" required="no" default="" />
+		<cfargument name="pickupDate" type="string" required="no" default="#now()#" />
+		<cfargument name="packageLocation" type="string" required="no" default="" hint="Available Options : FRONT, NONE, REAR, SIDE" />
+		<cfargument name="buildingPartDescription" type="string" required="no" default="" />
+		<cfargument name="companyCloseTime" type="string" required="no" default="17" hint="Time in 24 hours format" />
+		<cfargument name="carrierCode" type="string" required="no" default="FDXG" hint="Available Options : FDXC, FDXE, FDXG, FXCC, FXFR, FXSP" />
+		<!---Extra Options--->
+		<cfargument name="returnRawResponse" type="boolean" required="no" default="false" />
+			
+		<cfset var XMLPacket = "" />
+		<cfset var xmlFile = "" />
+		<cfset var cfhttp = "" />
+		<cfset var err = false />
+		<cfset var fedexReply	= StructNew() />
+		<cfset var fedexLabel = "" />
+		<cfset var fileName = "" />
+		<cfset var n = "" />
+		<cfset var r = "" />
+		<cfset var s = "" />
+		<cfset var counter = 1 />
+		<cfset var i = "" />
+
+		<!---Build the XML Packet to send to FedEx--->
+		<cfsavecontent variable="XMLPacket"><cfoutput>
+		<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ns="http://fedex.com/ws/pickup/v6">
+			<SOAP-ENV:Body>
+				<ns:CreatePickupRequest>
+					<ns:WebAuthenticationDetail>
+						<ns:UserCredential>
+							<ns:Key>#variables.key#</ns:Key>
+							<ns:Password>#variables.password#</ns:Password>
+						</ns:UserCredential>
+					</ns:WebAuthenticationDetail>
+					<ns:ClientDetail>
+						<ns:AccountNumber>#variables.accountNo#</ns:AccountNumber>
+						<ns:MeterNumber>#variables.meterNo#</ns:MeterNumber>
+					</ns:ClientDetail>
+					<cfif len(trim(arguments.orderid))>
+					<ns:TransactionDetail>
+						<ns:CustomerTransactionId>#arguments.orderid#</ns:CustomerTransactionId>
+					</ns:TransactionDetail>
+					</cfif>
+					<ns:Version>
+						<ns:ServiceId>disp</ns:ServiceId>
+						<ns:Major>6</ns:Major>
+						<ns:Intermediate>0</ns:Intermediate>
+						<ns:Minor>0</ns:Minor>
+					</ns:Version>
+					<ns:OriginDetail>
+						<ns:PickupLocation>
+							<ns:Contact>
+								<cfif len(trim(arguments.shipperName))>
+									<ns:PersonName>#arguments.shipperName#</ns:PersonName>
+								</cfif>
+								<cfif len(trim(arguments.shipperPhone))>
+									<ns:CompanyName>#arguments.shipperCompany#</ns:CompanyName>
+								</cfif>
+								<cfif len(trim(arguments.shipperPhone))>
+									<ns:PhoneNumber>#arguments.shipperPhone#</ns:PhoneNumber>
+								</cfif>
+							</ns:Contact>
+							<ns:Address>
+							<cfif len(trim(arguments.shipperAddress1))>
+								<ns:StreetLines>#arguments.shipperAddress1#</ns:StreetLines>
+							</cfif>
+							<cfif len(trim(arguments.shipperAddress2))>
+								<ns:StreetLines>#arguments.shipperAddress2#</ns:StreetLines>
+							</cfif>
+							<cfif len(trim(arguments.shipperCity))>
+								<ns:City>#arguments.shipperCity#</ns:City>
+							</cfif>
+							<cfif len(trim(arguments.shipperState))>
+								<ns:StateOrProvinceCode>#arguments.shipperState#</ns:StateOrProvinceCode>
+							</cfif>
+								<ns:PostalCode>#arguments.shipperZip#</ns:PostalCode>
+							<cfif len(trim(arguments.shipperUrbCode))>
+								<ns:UrbanizationCode>#arguments.shipperUrbCode#</ns:UrbanizationCode>
+							</cfif>
+								<ns:CountryCode>#arguments.shipperCountry#</ns:CountryCode>
+								<ns:Residential>#iif(arguments.shipperIsResidential, DE('true'), DE('false'))#</ns:Residential>
+							</ns:Address>
+						</ns:PickupLocation>
+						<cfif len(trim(arguments.packageLocation))>
+						<ns:PackageLocation>#arguments.packageLocation#</ns:PackageLocation>
+						</cfif>
+						<cfif len(trim(arguments.buildingPartDescription))>
+						<ns:BuildingPartDescription>#arguments.buildingPartDescription#</ns:BuildingPartDescription>
+						</cfif>
+						<ns:ReadyTimestamp>#dateformat(arguments.pickupDate,"yyyy-mm-dd")#T#TimeFormat(arguments.pickupDate, "HH:mm:ss")#</ns:ReadyTimestamp>
+						<cfif len(trim(arguments.companyCloseTime))>
+						<ns:CompanyCloseTime>#TimeFormat(arguments.companyCloseTime, "HH:mm:ss")#</ns:CompanyCloseTime>
+						</cfif>
+					</ns:OriginDetail>
+					<ns:PackageCount>#arguments.packageCount#</ns:PackageCount>
+					<ns:TotalWeight>
+						<ns:Units>LB</ns:Units>
+						<ns:Value>#arguments.weight#</ns:Value>
+					</ns:TotalWeight>
+					<ns:CarrierCode>#arguments.carrierCode#</ns:CarrierCode>
+				</ns:CreatePickupRequest>
+			</SOAP-ENV:Body>
+		</SOAP-ENV:Envelope>
+		</cfoutput></cfsavecontent>
+	
+		<cfhttp url="#variables.fedexurl#/ship" port="443" method ="POST"> 
+			<cfhttpparam name="name" type="XML" value="#XMLPacket#" /> 
+		</cfhttp>
+		
+		<!--- extract response from envelope body --->
+		<cfset xmlFile = XmlParse(CFHTTP.FileContent).Envelope.Body />
+
+		<!---Build the Struct for Return--->
+		<cfset fedexReply.response = Arraynew(1) />
+		
+		<cfif arguments.returnRawResponse>
+			<cfset fedexReply.rawResponse = CFHTTP.FileContent />
+		</cfif>
+
+		<!---Did you pass bad info or malformed XML?--->
+		<cfif not isDefined('xmlFile.Fault')>
+			
+			<cfif xmlfile.CreatePickupReply.HighestSeverity.xmltext contains "Error"
+				OR xmlfile.CreatePickupReply.HighestSeverity.xmltext contains "Warning"
+				OR xmlfile.CreatePickupReply.HighestSeverity.xmltext contains "Failure">
+				
+				<cfset err = true />
+			</cfif>
+
+			<cfloop from="1" to="#arrayLen(xmlfile.CreatePickupReply.Notifications)#" index="n">
+				<cfset fedexReply.response[n] = structNew() />
+				<cfset fedexReply.response[n].status = xmlfile.CreatePickupReply.Notifications[n].Severity.xmltext />
+				<cfset fedexReply.response[n].msg = xmlfile.CreatePickupReply.Notifications[n].Message.xmltext />
+			</cfloop>
+
+			<!---Did FedEx reply with an error?--->
+			<cfif NOT err>
+				
+			</cfif>
+		<cfelse>
+			<cfset fedexReply.response = ArrayNew(1) />
+			<cfset fedexReply.response[1] = structNew() />
+			<cfset fedexReply.response[1].status = "Error" />
+			<cfset fedexReply.response[1].msg = xmlFile.Fault.faultstring.xmltext />
+				
+			<cfset err = true />
+		</cfif>
+	
+		<cfset fedexReply.success = NOT err />
+
+		<cfreturn fedexReply />
+	</cffunction>
 </cfcomponent>
