@@ -612,10 +612,11 @@
 		<!--- pickup details ---->
 		<cfargument name="orderid" type="string" required="no" default="" />
 		<cfargument name="pickupDate" type="string" required="no" default="#now()#" />
-		<cfargument name="packageLocation" type="string" required="no" default="" hint="Available Options : FRONT, NONE, REAR, SIDE" />
+		<cfargument name="packageLocation" type="string" required="no" default="NONE" hint="Available Options : FRONT, NONE, REAR, SIDE" />
 		<cfargument name="buildingPartDescription" type="string" required="no" default="" />
-		<cfargument name="companyCloseTime" type="string" required="no" default="17" hint="Time in 24 hours format" />
-		<cfargument name="carrierCode" type="string" required="no" default="FDXG" hint="Available Options : FDXC, FDXE, FDXG, FXCC, FXFR, FXSP" />
+		<cfargument name="companyCloseTime" type="string" required="no" default="17:00:00" hint="Time in 24 hours format" />
+		<cfargument name="carrierCode" type="string" required="no" default="FDXE" hint="Available Options : FDXC, FDXE, FDXG, FXCC, FXFR, FXSP" />
+		<cfargument name="remarks" type="string" required="no" default="" />
 		<!---Extra Options--->
 		<cfargument name="returnRawResponse" type="boolean" required="no" default="false" />
 			
@@ -659,6 +660,7 @@
 						<ns:Minor>0</ns:Minor>
 					</ns:Version>
 					<ns:OriginDetail>
+						<ns:UseAccountAddress>false</ns:UseAccountAddress>
 						<ns:PickupLocation>
 							<ns:Contact>
 								<cfif len(trim(arguments.shipperName))>
@@ -700,7 +702,7 @@
 						</cfif>
 						<ns:ReadyTimestamp>#dateformat(arguments.pickupDate,"yyyy-mm-dd")#T#TimeFormat(arguments.pickupDate, "HH:mm:ss")#</ns:ReadyTimestamp>
 						<cfif len(trim(arguments.companyCloseTime))>
-						<ns:CompanyCloseTime>#TimeFormat(arguments.companyCloseTime, "HH:mm:ss")#</ns:CompanyCloseTime>
+						<ns:CompanyCloseTime>#arguments.companyCloseTime#</ns:CompanyCloseTime>
 						</cfif>
 					</ns:OriginDetail>
 					<ns:PackageCount>#arguments.packageCount#</ns:PackageCount>
@@ -709,6 +711,9 @@
 						<ns:Value>#arguments.weight#</ns:Value>
 					</ns:TotalWeight>
 					<ns:CarrierCode>#arguments.carrierCode#</ns:CarrierCode>
+					<cfif len(trim(arguments.remarks))>
+					<ns:Remarks>#arguments.remarks#</ns:Remarks>
+					</cfif>
 				</ns:CreatePickupRequest>
 			</SOAP-ENV:Body>
 		</SOAP-ENV:Envelope>
@@ -746,7 +751,10 @@
 
 			<!---Did FedEx reply with an error?--->
 			<cfif NOT err>
-				
+				PickupConfirmationNumber
+				<cfif IsDefined("xmlfile.CreatePickupReply.PickupConfirmationNumber")>
+					<cfset fedexReply.confirmationNumber  = xmlfile.CreatePickupReply.PickupConfirmationNumber.XmlText />
+				</cfif>
 			</cfif>
 		<cfelse>
 			<cfset fedexReply.response = ArrayNew(1) />

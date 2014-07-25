@@ -34,9 +34,13 @@
 			
 			weight = "1",
 			packageCount = "1",
-			pickupDate = DateAdd('h', Now(), 12),
+			pickupDate = DateAdd('h', 24, Now()),
+			companyCloseTime = "17:00:00",
+			packageLocation = "NONE",
+			carrierCode = "FDXE",
+			remarks = "Courier Pickup Request",
 			
-			returnRawResponse = true
+			returnRawResponse = false
 		) />
 
 		<section id="fedexPickupRequest">
