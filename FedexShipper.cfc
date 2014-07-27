@@ -751,7 +751,6 @@
 
 			<!---Did FedEx reply with an error?--->
 			<cfif NOT err>
-				PickupConfirmationNumber
 				<cfif IsDefined("xmlfile.CreatePickupReply.PickupConfirmationNumber")>
 					<cfset fedexReply.confirmationNumber  = xmlfile.CreatePickupReply.PickupConfirmationNumber.XmlText />
 				</cfif>
