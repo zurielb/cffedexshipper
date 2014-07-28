@@ -868,13 +868,110 @@
 				<cfset fedexReply.response[n].status = xmlfile.CancelPickupReply.Notifications[n].Severity.xmltext />
 				<cfset fedexReply.response[n].msg = xmlfile.CancelPickupReply.Notifications[n].Message.xmltext />
 			</cfloop>
+		<cfelse>
+			<cfset fedexReply.response = ArrayNew(1) />
+			<cfset fedexReply.response[1] = structNew() />
+			<cfset fedexReply.response[1].status = "Error" />
+			<cfset fedexReply.response[1].msg = xmlFile.Fault.faultstring.xmltext />
+				
+			<cfset err = true />
+		</cfif>
+	
+		<cfset fedexReply.success = NOT err />
 
-			<!---Did FedEx reply with an error?--->
-			<cfif NOT err>
-				<cfif IsDefined("xmlfile.CancelPickupReply.Message")>
-					<cfset fedexReply.message  = xmlfile.CancelPickupReply.Message.XmlText />
-				</cfif>
+		<cfreturn fedexReply />
+	</cffunction>
+	
+	<cffunction name="deleteShipmentRequest" access="remote" returntype="struct" output="false">
+		<cfargument name="trackingNumber" type="string" required="yes" />
+		<cfargument name="trackingIdType" type="string" required="no" default="GROUND" hint="Available Options : EXPRESS, FEDEX, FREIGHT, GROUND, USPS" />
+		<cfargument name="shipDate" type="string" required="no" default="" />
+		<cfargument name="orderId" type="string" required="no" default="" />
+		
+		<!---Extra Options--->
+		<cfargument name="returnRawResponse" type="boolean" required="no" default="false" />
+			
+		<cfset var XMLPacket = "" />
+		<cfset var xmlFile = "" />
+		<cfset var cfhttp = "" />
+		<cfset var err = false />
+		<cfset var fedexReply	= StructNew() />
+		<cfset var fedexLabel = "" />
+		<cfset var fileName = "" />
+		<cfset var n = "" />
+		<cfset var r = "" />
+		<cfset var s = "" />
+		<cfset var counter = 1 />
+		<cfset var i = "" />
+
+		<!---Build the XML Packet to send to FedEx--->
+		<cfsavecontent variable="XMLPacket"><cfoutput>
+		<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ns="http://fedex.com/ws/ship/v13">
+			<SOAP-ENV:Body>
+				<ns:DeleteShipmentRequest>
+					<ns:WebAuthenticationDetail>
+						<ns:UserCredential>
+							<ns:Key>#variables.key#</ns:Key>
+							<ns:Password>#variables.password#</ns:Password>
+						</ns:UserCredential>
+					</ns:WebAuthenticationDetail>
+					<ns:ClientDetail>
+						<ns:AccountNumber>#variables.accountNo#</ns:AccountNumber>
+						<ns:MeterNumber>#variables.meterNo#</ns:MeterNumber>
+					</ns:ClientDetail>
+					<cfif len(trim(arguments.orderid))>
+					<ns:TransactionDetail>
+						<ns:CustomerTransactionId>#arguments.orderid#</ns:CustomerTransactionId>
+					</ns:TransactionDetail>
+					</cfif>
+					<ns:Version>
+						<ns:ServiceId>ship</ns:ServiceId>
+						<ns:Major>13</ns:Major>
+						<ns:Intermediate>0</ns:Intermediate>
+						<ns:Minor>0</ns:Minor>
+					</ns:Version>
+					<cfif len(trim(arguments.shipDate))>
+					<ns:ShipTimestamp>#dateformat(arguments.shipDate,"yyyy-mm-dd")#</ns:ShipTimestamp>
+					</cfif>
+					<ns:TrackingId>
+						<ns:TrackingIdType>#arguments.trackingIdType#</ns:TrackingIdType>
+						<ns:TrackingNumber>#arguments.trackingNumber#</ns:TrackingNumber>
+					</ns:TrackingId>
+					<ns:DeletionControl>DELETE_ALL_PACKAGES</ns:DeletionControl>
+				</ns:DeleteShipmentRequest>
+			</SOAP-ENV:Body>
+		</SOAP-ENV:Envelope>
+		</cfoutput></cfsavecontent>
+	
+		<cfhttp url="#variables.fedexurl#/ship" port="443" method ="POST"> 
+			<cfhttpparam name="name" type="XML" value="#XMLPacket#" /> 
+		</cfhttp>
+		
+		<!--- extract response from envelope body --->
+		<cfset xmlFile = XmlParse(CFHTTP.FileContent).Envelope.Body />
+
+		<!---Build the Struct for Return--->
+		<cfset fedexReply.response = Arraynew(1) />
+		
+		<cfif arguments.returnRawResponse>
+			<cfset fedexReply.rawResponse = CFHTTP.FileContent />
+		</cfif>
+
+		<!---Did you pass bad info or malformed XML?--->
+		<cfif not isDefined('xmlFile.Fault')>
+			
+			<cfif xmlfile.ShipmentReply.HighestSeverity.xmltext contains "Error"
+				OR xmlfile.ShipmentReply.HighestSeverity.xmltext contains "Warning"
+				OR xmlfile.ShipmentReply.HighestSeverity.xmltext contains "Failure">
+				
+				<cfset err = true />
 			</cfif>
+
+			<cfloop from="1" to="#arrayLen(xmlfile.ShipmentReply.Notifications)#" index="n">
+				<cfset fedexReply.response[n] = structNew() />
+				<cfset fedexReply.response[n].status = xmlfile.ShipmentReply.Notifications[n].Severity.xmltext />
+				<cfset fedexReply.response[n].msg = xmlfile.ShipmentReply.Notifications[n].Message.xmltext />
+			</cfloop>
 		<cfelse>
 			<cfset fedexReply.response = ArrayNew(1) />
 			<cfset fedexReply.response[1] = structNew() />
