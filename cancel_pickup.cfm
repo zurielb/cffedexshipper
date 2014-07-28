@@ -21,31 +21,19 @@
 			sandbox = true
 		) />
 
-		<cfset fedexReply = fedexShipper.createPickupRequest(
-			shipperName = "Customer Service",
-			shipperCompany = "Company Name",
-			shipperPhone = "2141112233",
-			shipperAddress1 = "6060 N Central Expwy.",
-			shipperCity = "Dallas",
-			shipperState = "TX",
-			shipperZip = "75206",
-			shipperCountry = "US",
-			shipperIsResidential = false,
-			
-			weight = "1",
-			packageCount = "1",
-			pickupDate = DateAdd('h', 14, Now()),
-			companyCloseTime = "17:00:00",
-			packageLocation = "NONE",
+		<cfset fedexReply = fedexShipper.cancelPickupRequest(
+			confirmationNumber = 1,
+			location = "GVTA",
+			scheduledDate = DateAdd('h', 12, Now()),
 			carrierCode = "FDXE",
-			remarks = "Courier Pickup Request",
+			reason = "Not needed anymore",
 			
 			returnRawResponse = false
 		) />
 
 		<section id="fedexPickupRequest">
-			<h2>Fedex Pickup Request</h2>
-			<cfdump var="#fedexReply#" expand="true" label="Fedex Pickup Request Result" />
+			<h2>Fedex Cancel Pickup Request</h2>
+			<cfdump var="#fedexReply#" expand="true" label="Fedex Cancel Pickup Request Result" />
 		</section>
 	</section>
 </body>

@@ -362,17 +362,17 @@
 				</ns:TransactionDetail>
 				</cfif>
 			  <ns:Version>
-			      <ns:ServiceId>ship</ns:ServiceId>
-			      <ns:Major>10</ns:Major>
-			      <ns:Intermediate>0</ns:Intermediate>
-			      <ns:Minor>0</ns:Minor>
+					<ns:ServiceId>ship</ns:ServiceId>
+					<ns:Major>10</ns:Major>
+					<ns:Intermediate>0</ns:Intermediate>
+					<ns:Minor>0</ns:Minor>
 			  </ns:Version>
 				<ns:RequestedShipment>
 					<ns:ShipTimestamp>#dateformat(arguments.ShipDate,"yyyy-mm-dd")#T#TimeFormat(arguments.shipDate, "HH:mm:ss")#</ns:ShipTimestamp>
 					<ns:DropoffType>#arguments.dropoffType#</ns:DropoffType>
 					<ns:ServiceType>#trim(arguments.shippingMethod)#</ns:ServiceType>
 					<ns:PackagingType>#trim(arguments.packagingType)#</ns:PackagingType>
-				
+					
 					<ns:Shipper>
 						<ns:Contact>
 							<cfif len(trim(arguments.shipperName))>
@@ -406,7 +406,7 @@
 							<ns:Residential>#iif(arguments.shipperIsResidential, DE('true'), DE('false'))#</ns:Residential>
 						</ns:Address>
 					</ns:Shipper>
-				
+					
 					<ns:Recipient>
 						<ns:Contact>
 							<ns:PersonName>#XMLFormat(arguments.shipToName)#</ns:PersonName>
@@ -430,7 +430,7 @@
 							<ns:Residential>#iif(arguments.shipToResidential, DE('true'), DE('false'))#</ns:Residential>
 						</ns:Address>
 					</ns:Recipient>
-
+					
 					<ns:ShippingChargesPayment>
 						<ns:PaymentType>#arguments.paymentType#</ns:PaymentType>
 						<ns:Payor>
@@ -438,7 +438,7 @@
 							<ns:CountryCode>#arguments.billingCountry#</ns:CountryCode>
 						</ns:Payor>
 					</ns:ShippingChargesPayment>
-
+					
 					<cfif len(arguments.specialServices) and listfind("SATURDAY_DELIVERY,SATURDAY_PICKUP,HOLD_AT_LOCATION",arguments.specialServices)>
 					<ns:SpecialServicesRequested>
 						<ns:SpecialServiceTypes>#arguments.specialServices#</ns:SpecialServiceTypes>    
@@ -460,7 +460,7 @@
 						</cfswitch>
 					</ns:SpecialServicesRequested>
 					</cfif>
-				
+					
 					<ns:LabelSpecification>
 						<ns:LabelFormatType>COMMON2D</ns:LabelFormatType>
 						<ns:ImageType>#ucase(arguments.imageType)#</ns:ImageType>
@@ -483,7 +483,7 @@
 								<ns:Units>IN</ns:Units>
 							</ns:Dimensions>
 							<ns:PhysicalPackaging>BOX</ns:PhysicalPackaging>
-
+							
 							<ns:CustomerReferences>
 								<ns:CustomerReferenceType>INVOICE_NUMBER</ns:CustomerReferenceType>
 								<ns:Value>#arguments.orderid#</ns:Value>
@@ -500,7 +500,7 @@
 								<ns:Value>#arguments.ponumber#</ns:Value>
 							</ns:CustomerReferences>
 							</cfif>
-
+							
 							<cfif len(arguments.specialServices) and listfind("DRY_ICE,DANGEROUS_GOODS",arguments.specialServices)>
 							<ns:SpecialServicesRequested>
 								<ns:SpecialServiceTypes>#arguments.specialServices#</ns:SpecialServiceTypes>    
@@ -523,14 +523,14 @@
 		</SOAP-ENV:Body>
 		</SOAP-ENV:Envelope>		
 		</cfoutput></cfsavecontent>
-	
+		
 		<cfhttp url="#variables.fedexurl#/ship" port="443" method ="POST"> 
 			<cfhttpparam name="name" type="XML" value="#XMLPacket#" /> 
 		</cfhttp>
 		
 		<!--- extract response from envelope body --->
 		<cfset xmlFile = XmlParse(CFHTTP.FileContent).Envelope.Body />
-
+		
 		<!---Build the Struct for Return--->
 		<cfset fedexReply.response = Arraynew(1) />
 		
@@ -753,6 +753,126 @@
 			<cfif NOT err>
 				<cfif IsDefined("xmlfile.CreatePickupReply.PickupConfirmationNumber")>
 					<cfset fedexReply.confirmationNumber  = xmlfile.CreatePickupReply.PickupConfirmationNumber.XmlText />
+				</cfif>
+				<cfif IsDefined("xmlfile.CreatePickupReply.Location")>
+					<cfset fedexReply.location  = xmlfile.CreatePickupReply.Location.XmlText />
+				</cfif>
+			</cfif>
+		<cfelse>
+			<cfset fedexReply.response = ArrayNew(1) />
+			<cfset fedexReply.response[1] = structNew() />
+			<cfset fedexReply.response[1].status = "Error" />
+			<cfset fedexReply.response[1].msg = xmlFile.Fault.faultstring.xmltext />
+				
+			<cfset err = true />
+		</cfif>
+	
+		<cfset fedexReply.success = NOT err />
+
+		<cfreturn fedexReply />
+	</cffunction>
+	
+	<cffunction name="cancelPickupRequest" access="remote" returntype="struct" output="false">
+		<cfargument name="confirmationNumber" type="string" required="yes" />
+		<cfargument name="scheduledDate" type="string" required="yes" />
+		<cfargument name="carrierCode" type="string" required="no" default="FDXE" hint="Available Options : FDXC, FDXE, FDXG, FXCC, FXFR, FXSP" />
+		<cfargument name="location" type="string" required="no" default="" hint="Available Options : FRONT, NONE, REAR, SIDE" />
+		<cfargument name="orderId" type="string" required="no" default="" />
+		<cfargument name="remarks" type="string" required="no" default="" />
+		<cfargument name="reason" type="string" required="no" default="" />
+		<!---Extra Options--->
+		<cfargument name="returnRawResponse" type="boolean" required="no" default="false" />
+			
+		<cfset var XMLPacket = "" />
+		<cfset var xmlFile = "" />
+		<cfset var cfhttp = "" />
+		<cfset var err = false />
+		<cfset var fedexReply	= StructNew() />
+		<cfset var fedexLabel = "" />
+		<cfset var fileName = "" />
+		<cfset var n = "" />
+		<cfset var r = "" />
+		<cfset var s = "" />
+		<cfset var counter = 1 />
+		<cfset var i = "" />
+
+		<!---Build the XML Packet to send to FedEx--->
+		<cfsavecontent variable="XMLPacket"><cfoutput>
+		<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ns="http://fedex.com/ws/pickup/v6">
+			<SOAP-ENV:Body>
+				<ns:CancelPickupRequest>
+					<ns:WebAuthenticationDetail>
+						<ns:UserCredential>
+							<ns:Key>#variables.key#</ns:Key>
+							<ns:Password>#variables.password#</ns:Password>
+						</ns:UserCredential>
+					</ns:WebAuthenticationDetail>
+					<ns:ClientDetail>
+						<ns:AccountNumber>#variables.accountNo#</ns:AccountNumber>
+						<ns:MeterNumber>#variables.meterNo#</ns:MeterNumber>
+					</ns:ClientDetail>
+					<cfif len(trim(arguments.orderid))>
+					<ns:TransactionDetail>
+						<ns:CustomerTransactionId>#arguments.orderid#</ns:CustomerTransactionId>
+					</ns:TransactionDetail>
+					</cfif>
+					<ns:Version>
+						<ns:ServiceId>disp</ns:ServiceId>
+						<ns:Major>6</ns:Major>
+						<ns:Intermediate>0</ns:Intermediate>
+						<ns:Minor>0</ns:Minor>
+					</ns:Version>
+					<ns:CarrierCode>#arguments.carrierCode#</ns:CarrierCode>
+					<ns:PickupConfirmationNumber>#arguments.confirmationNumber#</ns:PickupConfirmationNumber>
+					<ns:ScheduledDate>#dateformat(arguments.scheduledDate,"yyyy-mm-dd")#</ns:ScheduledDate>
+					<cfif len(trim(arguments.location))>
+					<ns:Location>#arguments.location#</ns:Location>
+					</cfif>
+					<cfif len(trim(arguments.remarks))>
+					<ns:Remarks>#arguments.remarks#</ns:Remarks>
+					</cfif>
+					<cfif len(trim(arguments.reason))>
+					<ns:Reason>#arguments.reason#</ns:Reason>
+					</cfif>
+				</ns:CancelPickupRequest>
+			</SOAP-ENV:Body>
+		</SOAP-ENV:Envelope>
+		</cfoutput></cfsavecontent>
+	
+		<cfhttp url="#variables.fedexurl#/ship" port="443" method ="POST"> 
+			<cfhttpparam name="name" type="XML" value="#XMLPacket#" /> 
+		</cfhttp>
+		
+		<!--- extract response from envelope body --->
+		<cfset xmlFile = XmlParse(CFHTTP.FileContent).Envelope.Body />
+
+		<!---Build the Struct for Return--->
+		<cfset fedexReply.response = Arraynew(1) />
+		
+		<cfif arguments.returnRawResponse>
+			<cfset fedexReply.rawResponse = CFHTTP.FileContent />
+		</cfif>
+
+		<!---Did you pass bad info or malformed XML?--->
+		<cfif not isDefined('xmlFile.Fault')>
+			
+			<cfif xmlfile.CancelPickupReply.HighestSeverity.xmltext contains "Error"
+				OR xmlfile.CancelPickupReply.HighestSeverity.xmltext contains "Warning"
+				OR xmlfile.CancelPickupReply.HighestSeverity.xmltext contains "Failure">
+				
+				<cfset err = true />
+			</cfif>
+
+			<cfloop from="1" to="#arrayLen(xmlfile.CancelPickupReply.Notifications)#" index="n">
+				<cfset fedexReply.response[n] = structNew() />
+				<cfset fedexReply.response[n].status = xmlfile.CancelPickupReply.Notifications[n].Severity.xmltext />
+				<cfset fedexReply.response[n].msg = xmlfile.CancelPickupReply.Notifications[n].Message.xmltext />
+			</cfloop>
+
+			<!---Did FedEx reply with an error?--->
+			<cfif NOT err>
+				<cfif IsDefined("xmlfile.CancelPickupReply.Message")>
+					<cfset fedexReply.message  = xmlfile.CancelPickupReply.Message.XmlText />
 				</cfif>
 			</cfif>
 		<cfelse>
