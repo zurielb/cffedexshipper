@@ -22,11 +22,7 @@
 		) />
 
 		<cfset fedexReply = fedexShipper.deleteShipmentRequest(
-			confirmationNumber = 1,
-			location = "GVTA",
-			scheduledDate = DateAdd('h', 12, Now()),
-			carrierCode = "FDXE",
-			reason = "Not needed anymore",
+			trackingNumber = "TRACKING_NUMBER",
 			
 			returnRawResponse = false
 		) />
