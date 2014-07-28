@@ -10,7 +10,7 @@
 		<h1><a href="/">cffedexshipper</a></h1>
 	</header>
 	<nav>
-		<a href="index.cfm">GetRates</a> | <a href="ship.cfm">ProcessShipmentRequest</a> | <a href="pickup.cfm">CreatePickupRequest</a> | <a href="cancel_pickup.cfm">CancelPickupRequest</a>
+		<a href="index.cfm">GetRates</a> | <a href="ship.cfm">ProcessShipmentRequest</a> | <a href="delete_ship.cfm">DeleteShipmentRequest</a> | <a href="pickup.cfm">CreatePickupRequest</a> | <a href="cancel_pickup.cfm">CancelPickupRequest</a>
 	</nav>
 	<section id="content">
 		<cfset fedexShipper = new FedexShipper(

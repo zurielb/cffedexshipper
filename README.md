@@ -19,6 +19,7 @@ Supported FedexMethods:
 
 - Rates (getRates)
 - Create Shipment (processShipmentRequest)
+- Cancel Shipment (deleteShipmentRequest)
 - Pickup (createPickupRequest)
 - Cancel Pickup (cancelPickupRequest)
 
