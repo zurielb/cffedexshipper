@@ -1,9 +1,9 @@
 cffedexshipper
 ==============
 
-Coldfusion component for calculating shipping rates and for submitting shipping requests to FedEx.
+Coldfusion component for calculating shipping rates and for submitting shipping and pickup requests to FedEx.
 
-This component is compatible with v10 of the Fedex Web Services API and has only been tested with Coldfusion 9. 
+This component has only been tested with Coldfusion 9. 
 
 Before You Begin:
 -----------------
@@ -13,6 +13,14 @@ You will need a set of developer account number, meter number, key and password.
 http://www.fedex.com/us/developer/solutions.html
 
 The FedEx documentation is not very good, but I highly recommend at least downloading the WSDL or XML definitions in order to understand all the parameters that can be passed to the Fedex Web Services. This is BY FAR the best way to learn about the web services implementation and to be able to customize the FedexShipper component to fit your needs.
+
+Supported FedexMethods:
+------------------
+
+- Rates (getRates)
+- Create Shipment (processShipmentRequest)
+- Pickup (createPickupRequest)
+- Cancel Pickup (cancelPickupRequest)
 
 ---------------
 Example Usage:
